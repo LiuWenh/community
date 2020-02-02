@@ -9,6 +9,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.servlet.http.HttpServletRequest;
+
 /** 总思路：
  * 1.1 登录请求发送以后，下一步调用authorize方法来获取Github社区的相关内容
  * 1.2.调用Github 的Authorize接口(在index.html文件里面，点击登录按钮，会访问authorize接口）(这里的Authorize操作包含下面的所有操作）
@@ -43,7 +45,8 @@ public class AuthorizeController {
     /*?这里的GetMapping 注解后面的/callback有什么具体的规定吗？我猜是当callback的时候调用这个方法？？？？，mapping是从前端发来的网址的信息？？*/
     @GetMapping("/callback")
     public  String callback(@RequestParam(name="code")String code,
-                            @RequestParam(name="state")String state) {
+                            @RequestParam(name="state")String state,
+                                        HttpServletRequest request) {
 
         AccessTokenDTO accessTokenDTO =new AccessTokenDTO();
         accessTokenDTO.setClient_id(clientId);
@@ -59,10 +62,17 @@ public class AuthorizeController {
          * provider还根据的参数就是(accessToken)    ————》返回的是一个User类的对象    ————》》   Destination:  Successfully get GitUser
          */
         GithubUser user = githubProvider.getUser(accessToken);
-        System.out.println(user.getName());
-        System.out.println(user.getBio());
-
+        System.out.println (user.getName ());
+        if(user!=null){
+            //登录成功，写cookie和session
+            request.getSession().setAttribute("user", user);
+            return "redirect:/";
+        }
+        else {
+            //登录失败，重新登录
+            return "redirect:/";
+        }
         //这里取到了我们需要的user信息
-        return "index";
+
     }
 }
