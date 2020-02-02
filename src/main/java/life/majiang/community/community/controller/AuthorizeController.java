@@ -4,6 +4,7 @@ import life.majiang.community.community.dto.AccessTokenDTO;
 import life.majiang.community.community.dto.GithubUser;
 import life.majiang.community.community.provider.GithubProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,16 +32,24 @@ public class AuthorizeController {
      问题 ： 猜测在url中有 user?access_token=的字样代表什么含义？
      */
 
+    @Value ("${github.client.id}")
+    private String clientId;
+    @Value ("${github.client.secret}")
+    private  String clientSecret;
+    @Value ("${github.redirect.uri}")
+    private  String redirectUri;
+
+
     /*?这里的GetMapping 注解后面的/callback有什么具体的规定吗？我猜是当callback的时候调用这个方法？？？？，mapping是从前端发来的网址的信息？？*/
     @GetMapping("/callback")
     public  String callback(@RequestParam(name="code")String code,
                             @RequestParam(name="state")String state) {
 
         AccessTokenDTO accessTokenDTO =new AccessTokenDTO();
-        accessTokenDTO.setClient_id("7afd2705617325e7f1f2");
-        accessTokenDTO.setClient_secret("bc8a472cdfa1d28f94c65fef723a7132d2f942a2");
+        accessTokenDTO.setClient_id(clientId);
+        accessTokenDTO.setClient_secret(clientSecret);
         accessTokenDTO.setCode(code);
-        accessTokenDTO.setRedirect_uri("http://localhost:8887/callback");
+        accessTokenDTO.setRedirect_uri(redirectUri);
         accessTokenDTO.setState(state);
 
         String accessToken = githubProvider.getAccessToken(accessTokenDTO);
