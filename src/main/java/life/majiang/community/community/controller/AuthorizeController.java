@@ -2,6 +2,8 @@ package life.majiang.community.community.controller;
 
 import life.majiang.community.community.dto.AccessTokenDTO;
 import life.majiang.community.community.dto.GithubUser;
+import life.majiang.community.community.mapper.UserMapper;
+import life.majiang.community.community.model.User;
 import life.majiang.community.community.provider.GithubProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.UUID;
 
 /** 总思路：
  * 1.1 登录请求发送以后，下一步调用authorize方法来获取Github社区的相关内容
@@ -25,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 @Controller
 public class AuthorizeController {
     //Autowired 注解，就能将Component注解达到的将GithubProvider的对象放到池里的对象直接取出，而不用实例化/
+    /**简而言之、言而简之，就是Autowired了以后不用再对它=new GithubProvider了*/
     @Autowired
     private GithubProvider githubProvider;
 
@@ -41,6 +45,9 @@ public class AuthorizeController {
     @Value ("${github.redirect.uri}")
     private  String redirectUri;
 
+    /**同理，这里不用new UserMapper了*/
+    @Autowired
+    private UserMapper userMapper;
 
     /*?这里的GetMapping 注解后面的/callback有什么具体的规定吗？我猜是当callback的时候调用这个方法？？？？，mapping是从前端发来的网址的信息？？*/
     @GetMapping("/callback")
@@ -61,11 +68,19 @@ public class AuthorizeController {
          * 在provider包中，根据accessTokenDTO ，得到了access_token                       ————》》   WAY   :  access_token
          * provider还根据的参数就是(accessToken)    ————》返回的是一个User类的对象    ————》》   Destination:  Successfully get GitUser
          */
-        GithubUser user = githubProvider.getUser(accessToken);
-        System.out.println (user.getName ());
-        if(user!=null){
+        GithubUser githubUser = githubProvider.getUser(accessToken);
+
+        if(githubUser!=null){
+            User user = new User ();
+            user.setToken (UUID.randomUUID ( ).toString ());
+            user.setName (githubUser.getName ());
+            user.setAccountId (String.valueOf (githubUser.getId ()));
+            user.setGmtCreate (System.currentTimeMillis ());
+            user.setGmtModified (user.getGmtCreate ());
+            userMapper.insert (user);
+
             //登录成功，写cookie和session
-            request.getSession().setAttribute("user", user);
+            request.getSession().setAttribute("user", githubUser);
             return "redirect:/";
         }
         else {
